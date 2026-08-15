@@ -70,7 +70,12 @@
             <input type="text" name="nombre" id="nombre" required>
             <label for="telefono">Tu WhatsApp</label>
             <input type="tel" name="telefono" id="telefono" placeholder="+54 9 11 ..." required>
+            {% if monto_sena %}
+            <p class="muted">Para confirmar el turno se paga una seña de <strong class="price">${{ monto_sena }}</strong> por Mercado Pago. El resto se abona en el salón.</p>
+            <button type="submit" class="btn">Pagar seña y confirmar</button>
+            {% else %}
             <button type="submit" class="btn">Confirmar turno</button>
+            {% endif %}
         </div>
     </form>
 </div>

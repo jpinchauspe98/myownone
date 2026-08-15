@@ -25,6 +25,7 @@ urlpatterns = [
     path("panel/<slug:slug>/", include("dashboard.urls")),
     path("salones/", include("webbooking.urls")),
     path("salones/", include("reviews.urls")),
+    path("salones/", include("payments.urls")),
 ]
 
 if settings.DEBUG:

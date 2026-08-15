@@ -17,7 +17,15 @@ class Tenant(models.Model):
     )
     mp_access_token = models.CharField(
         max_length=255, blank=True,
-        help_text="Access token de Mercado Pago del salón (Fase 2)",
+        help_text="Access token (Production o Test) de la cuenta de Mercado Pago del salón",
+    )
+    sena_habilitada = models.BooleanField(
+        default=False,
+        help_text="Si está activo, el cliente debe pagar una seña por Mercado Pago para confirmar el turno",
+    )
+    sena_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, default=30,
+        help_text="% del precio del servicio que se cobra como seña",
     )
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
     activo = models.BooleanField(default=True)

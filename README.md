@@ -11,11 +11,15 @@ definido para el proyecto.
 - **Fase 1**: elegir peluquero al reservar (o "primero disponible"),
   reseñas ligadas 1 a 1 al peluquero que atendió, dashboard de KPIs con
   facturación total y desglosada por peluquero/servicio.
+- **Seña con Mercado Pago (adelantada de Fase 2)**: si el salón tiene
+  `sena_habilitada` y un `mp_access_token` cargado, reservar redirige al
+  cliente al link de pago de Checkout Pro antes de confirmar el turno,
+  para reducir el ausentismo. Ver detalle más abajo.
 
-Todavía **no** están implementados el bot de WhatsApp ni Mercado Pago
-(Fase 2) ni el multi-tenant real por subdominio (Fase 3) — los modelos
-(`MensajeWhatsApp`, `Pago`) ya existen para no tener que migrar de nuevo,
-pero la lógica de negocio de esas fases no se construyó todavía.
+Todavía **no** están implementados el bot de WhatsApp, el pago total al
+finalizar el servicio, ni el multi-tenant real por subdominio (Fase 3) —
+el modelo `MensajeWhatsApp` ya existe para no tener que migrar de nuevo,
+pero la lógica de negocio de esa fase no se construyó todavía.
 
 ## Nota sobre el punto de partida
 
@@ -56,7 +60,7 @@ en `config/settings.py`.
 | `catalog` | `Servicio`, `CategoriaServicio`, `Producto`, `Promocion` |
 | `appointments` | `Cliente`, `Turno` (con validación de fechas pasadas y horario del salón) |
 | `reviews` | `Resena`, ligada al `Turno` y por lo tanto al `Barbero` específico |
-| `payments` | `Pago` (modelo listo, integración Mercado Pago pendiente — Fase 2) |
+| `payments` | `Pago`, integración Checkout Pro (seña al reservar) + webhook |
 | `whatsapp_bot` | `MensajeWhatsApp` (log, webhook y state machine pendientes — Fase 2) |
 | `dashboard` | KPIs de facturación y ranking de peluqueros por rating |
 | `webbooking` | Mini-web pública: elegir servicio → peluquero → horario → confirmar |
@@ -73,7 +77,37 @@ en `config/settings.py`.
       con alerta si el rating cae debajo del umbral configurable por
       tenant (`Tenant.umbral_alerta_rating`).
 
+## Seña con Mercado Pago
+
+Cada salón cobra con su propia cuenta de Mercado Pago (multi-tenant desde
+el día uno, la plataforma no procesa el dinero de terceros). Para
+activarla en un salón, desde `/admin/` en el `Tenant` correspondiente:
+
+1. Cargar `mp_access_token` (el access token de la cuenta de Mercado Pago del salón — Production o Test).
+2. Activar `sena_habilitada` y ajustar `sena_porcentaje` (por defecto 30%).
+
+Con eso activo, al confirmar el turno en la mini-web el cliente es
+redirigido al Checkout Pro de Mercado Pago para pagar la seña; recién ahí
+el turno pasa a `confirmado` (antes queda en `pendiente`). El webhook
+(`/salones/<slug>/pagos/webhook/`) y la página de retorno
+(`/salones/<slug>/pagos/retorno/<turno_id>/`) confirman el pago aunque el
+cliente cierre la pestaña de Mercado Pago antes de volver.
+
+Si `sena_habilitada` está en `True` pero no hay `mp_access_token`
+cargado, el turno se confirma directo sin pedir seña (no bloquea reservas
+por una config a medio terminar). Si el token está cargado pero es
+inválido o la API de Mercado Pago falla, no se crea el turno y se le pide
+al cliente reintentar — no se pierden reservas por errores silenciosos.
+
+**No se pudo probar el pago real end-to-end en esta sesión** (no hay
+credenciales de Mercado Pago disponibles en este entorno) — sí se probó
+el flujo normal sin seña (regresión), el aviso del monto de la seña antes
+de confirmar, y el manejo de error cuando el token es inválido (no queda
+ningún turno huérfano en la base). Antes de ir a producción con un salón
+real, probar el circuito completo con credenciales de Test de Mercado
+Pago.
+
 ## Próximos pasos (no arrancar sin validar Fase 1 con el cliente real)
 
-- Fase 2: bot de WhatsApp (Meta Cloud API) + checkout Mercado Pago + promociones activas en el flujo de reserva.
+- Fase 2: bot de WhatsApp (Meta Cloud API) + promociones activas en el flujo de reserva + pago total al finalizar el servicio.
 - Fase 3: multi-tenant self-service, panel super-admin, facturación SaaS.

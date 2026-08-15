@@ -1,0 +1,23 @@
+{% extends "webbooking/base.html" %}
+{% block content %}
+<div class="card">
+    {% if turno.sena_pagada %}
+        <h2>✅ Seña acreditada, turno confirmado</h2>
+    {% elif estado == "pending" %}
+        <h2>⏳ Tu pago está siendo procesado</h2>
+        <p class="muted">Te vamos a confirmar el turno por WhatsApp apenas se acredite.</p>
+    {% else %}
+        <h2>El pago no se completó</h2>
+        <p class="muted">Tu turno todavía no está confirmado. Podés intentar de nuevo.</p>
+    {% endif %}
+
+    <p><strong>{{ turno.servicio.nombre }}</strong> con <strong>{{ turno.barbero.nombre }}</strong></p>
+    <p>{{ turno.fecha_hora|date:"l d/m/Y H:i" }}</p>
+
+    {% if not turno.sena_pagada and estado != "pending" %}
+    <a class="btn" href="{% url 'webbooking:reservar' tenant.slug %}?servicio={{ turno.servicio.id }}&barbero={{ turno.barbero.id }}">Volver a intentar</a>
+    {% else %}
+    <a class="btn" href="{% url 'webbooking:home' tenant.slug %}">Volver al inicio</a>
+    {% endif %}
+</div>
+{% endblock %}

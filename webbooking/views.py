@@ -1,13 +1,12 @@
 import datetime
 
 from django.contrib import messages
-from django.db.models import Avg
-from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from appointments.models import Cliente, Turno
 from catalog.models import Servicio
+from payments import services
 from staff.models import Barbero
 from tenants.models import Tenant
 
@@ -74,8 +73,11 @@ def reservar(request, slug):
         barbero = barberos.first()
 
     slots_por_dia = []
+    monto_sena = None
     if servicio and barbero:
         slots_por_dia = _slots_disponibles(tenant, barbero, servicio)
+        if tenant.sena_habilitada and tenant.mp_access_token:
+            monto_sena = round(servicio.precio * tenant.sena_porcentaje / 100, 2)
 
     if request.method == "POST":
         fecha_hora_raw = request.POST.get("fecha_hora")
@@ -88,17 +90,33 @@ def reservar(request, slug):
             cliente, _ = Cliente.objects.get_or_create(
                 tenant=tenant, telefono=telefono, defaults={"nombre": nombre}
             )
+            requiere_sena = tenant.sena_habilitada and bool(tenant.mp_access_token)
             turno = Turno.objects.create(
                 tenant=tenant, cliente=cliente, barbero=barbero, servicio=servicio,
-                fecha_hora=fecha_hora, estado=Turno.Estado.CONFIRMADO,
+                fecha_hora=fecha_hora,
+                estado=Turno.Estado.PENDIENTE if requiere_sena else Turno.Estado.CONFIRMADO,
                 canal_origen=Turno.Canal.WEB, monto=servicio.precio,
             )
-            return redirect("webbooking:confirmacion", slug=tenant.slug, turno_id=turno.id)
+
+            if requiere_sena:
+                try:
+                    _, init_point = services.crear_preferencia_sena(request, turno)
+                except (services.MercadoPagoNoConfigurado, services.MercadoPagoError):
+                    turno.delete()
+                    messages.error(
+                        request,
+                        "No pudimos generar el link de pago de la seña. Probá de nuevo en unos minutos "
+                        "o contactá al salón por WhatsApp.",
+                    )
+                else:
+                    return redirect(init_point)
+            else:
+                return redirect("webbooking:confirmacion", slug=tenant.slug, turno_id=turno.id)
 
     return render(request, "webbooking/reservar.html", {
         "tenant": tenant, "servicios": servicios, "barberos": barberos,
         "servicio": servicio, "barbero": barbero, "primero_disponible": primero_disponible,
-        "slots_por_dia": slots_por_dia,
+        "slots_por_dia": slots_por_dia, "monto_sena": monto_sena,
     })
 
 
