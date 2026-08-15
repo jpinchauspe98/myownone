@@ -1,0 +1,8 @@
+{% extends "webbooking/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>¡Gracias por tu reseña!</h2>
+    <p>{{ resena.rating }}★ para {{ resena.barbero.nombre }}</p>
+    {% if resena.comentario %}<p class="muted">"{{ resena.comentario }}"</p>{% endif %}
+</div>
+{% endblock %}

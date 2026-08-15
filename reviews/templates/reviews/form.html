@@ -1,0 +1,21 @@
+{% extends "webbooking/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>¿Cómo te fue con {{ turno.barbero.nombre }}?</h2>
+    <p class="muted">{{ turno.servicio.nombre }} — {{ turno.fecha_hora|date:"d/m/Y" }}</p>
+    <form method="post">
+        {% csrf_token %}
+        <label>Puntaje</label>
+        <div class="slot-row" style="margin-bottom:1rem;">
+            {% for i in "12345" %}
+            <label style="display:inline-flex; align-items:center; gap:0.25rem; border:1px solid var(--border); border-radius:6px; padding:0.4rem 0.7rem; font-weight:normal; cursor:pointer;">
+                <input type="radio" name="rating" value="{{ i }}" required> {{ i }}★
+            </label>
+            {% endfor %}
+        </div>
+        <label for="comentario">Comentario (opcional)</label>
+        <textarea name="comentario" id="comentario" rows="3" style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;"></textarea>
+        <button type="submit" class="btn" style="margin-top:1rem;">Enviar reseña</button>
+    </form>
+</div>
+{% endblock %}

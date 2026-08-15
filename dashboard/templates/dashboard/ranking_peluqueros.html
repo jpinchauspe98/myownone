@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>Ranking de peluqueros por rating</h2>
+    <table>
+        <thead><tr><th>#</th><th>Peluquero</th><th>Rating</th><th>Reseñas</th><th></th></tr></thead>
+        <tbody>
+        {% for b in barberos %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ b.nombre }}</td>
+                <td>★ {{ b.rating_promedio }}</td>
+                <td>{{ b.cantidad_resenas }}</td>
+                <td>{% if b.cantidad_resenas > 0 and b.rating_promedio < umbral %}<span class="badge-alerta">⚠ debajo del umbral ({{ umbral }})</span>{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5">Todavía no hay peluqueros activos.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+from django.db import models
+
+from tenants.models import Tenant
+from staff.models import Barbero
+from catalog.models import Servicio
+
+
+class Cliente(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="clientes")
+    nombre = models.CharField(max_length=150)
+    telefono = models.CharField(max_length=20)
+    email = models.EmailField(blank=True)
+
+    class Meta:
+        unique_together = ("tenant", "telefono")
+
+    def __str__(self):
+        return f"{self.nombre} ({self.telefono})"
+
+
+class Turno(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        CONFIRMADO = "confirmado", "Confirmado"
+        COMPLETADO = "completado", "Completado"
+        CANCELADO = "cancelado", "Cancelado"
+        NO_SHOW = "no_show", "No se presentó"
+
+    class Canal(models.TextChoices):
+        WHATSAPP = "whatsapp", "WhatsApp"
+        WEB = "web", "Mini-web"
+        ADMIN = "admin", "Cargado manualmente"
+
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="turnos")
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="turnos")
+    barbero = models.ForeignKey(Barbero, on_delete=models.PROTECT, related_name="turnos")
+    servicio = models.ForeignKey(Servicio, on_delete=models.PROTECT, related_name="turnos")
+    fecha_hora = models.DateTimeField()
+    estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.PENDIENTE)
+    canal_origen = models.CharField(max_length=20, choices=Canal.choices, default=Canal.WEB)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    sena_pagada = models.BooleanField(default=False)
+    pago_id_mp = models.CharField(max_length=100, blank=True)
+    resena_solicitada = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha_hora"]
+
+    def __str__(self):
+        return f"{self.cliente.nombre} con {self.barbero.nombre} - {self.fecha_hora:%d/%m %H:%M}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from django.utils import timezone
+        # Sólo se valida al crear un turno nuevo que todavía no ocurrió
+        # (pendiente/confirmado). Un turno completado/cancelado/no-show
+        # representa algo que ya pasó, así que no aplica la regla.
+        es_turno_futuro = self.estado in (self.Estado.PENDIENTE, self.Estado.CONFIRMADO)
+        if self.pk is None and es_turno_futuro and self.fecha_hora and self.fecha_hora < timezone.now():
+            raise ValidationError("No se pueden crear turnos en fechas pasadas.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

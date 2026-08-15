@@ -1,0 +1,11 @@
+{% extends "webbooking/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>✅ Turno confirmado</h2>
+    <p><strong>{{ turno.servicio.nombre }}</strong> con <strong>{{ turno.barbero.nombre }}</strong></p>
+    <p>{{ turno.fecha_hora|date:"l d/m/Y H:i" }}</p>
+    <p class="price">${{ turno.monto }}</p>
+    <p class="muted">Te vamos a escribir por WhatsApp para recordarte el turno.</p>
+    <a class="btn" href="{% url 'webbooking:home' tenant.slug %}">Volver al inicio</a>
+</div>
+{% endblock %}

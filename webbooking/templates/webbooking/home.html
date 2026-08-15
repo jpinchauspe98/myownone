@@ -1,0 +1,34 @@
+{% extends "webbooking/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>Nuestros peluqueros</h2>
+    <div class="grid">
+        {% for b in barberos %}
+        <div class="option">
+            <strong>{{ b.nombre }}</strong>
+            {% if b.rating_promedio %}<div class="rating">★ {{ b.rating_promedio }}</div>{% endif %}
+            <div class="muted">{% for e in b.especialidades.all %}{{ e.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+        </div>
+        {% empty %}
+        <p class="muted">Todavía no hay peluqueros cargados.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Servicios</h2>
+    <div class="grid">
+        {% for s in servicios %}
+        <a class="option" href="{% url 'webbooking:reservar' tenant.slug %}?servicio={{ s.id }}">
+            <strong>{{ s.nombre }}</strong>
+            <div class="price">${{ s.precio }}</div>
+            <div class="muted">{{ s.duracion_min }} min{% if s.categoria %} · {{ s.categoria.nombre }}{% endif %}</div>
+        </a>
+        {% empty %}
+        <p class="muted">Todavía no hay servicios cargados.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<a class="btn" href="{% url 'webbooking:reservar' tenant.slug %}">Reservar turno</a>
+{% endblock %}

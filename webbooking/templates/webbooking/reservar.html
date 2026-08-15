@@ -1,0 +1,89 @@
+{% extends "webbooking/base.html" %}
+{% block content %}
+<div class="steps">
+    <span class="{% if not servicio %}active{% endif %}">1. Servicio</span> →
+    <span class="{% if servicio and not barbero %}active{% endif %}">2. Peluquero</span> →
+    <span class="{% if servicio and barbero %}active{% endif %}">3. Horario y confirmación</span>
+</div>
+
+{% if not servicio %}
+<div class="card">
+    <h2>Elegí el servicio</h2>
+    <div class="grid">
+        {% for s in servicios %}
+        <a class="option" href="?servicio={{ s.id }}">
+            <strong>{{ s.nombre }}</strong>
+            <div class="price">${{ s.precio }}</div>
+            <div class="muted">{{ s.duracion_min }} min</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% elif not barbero %}
+<div class="card">
+    <h2>Elegí tu peluquero</h2>
+    <p class="muted">Servicio: <strong>{{ servicio.nombre }}</strong> — ${{ servicio.precio }}</p>
+    <div class="grid">
+        <a class="option" href="?servicio={{ servicio.id }}&barbero=primero_disponible">
+            <strong>⚡ Primero disponible</strong>
+            <div class="muted">Te asignamos el próximo horario libre</div>
+        </a>
+        {% for b in barberos %}
+        <a class="option" href="?servicio={{ servicio.id }}&barbero={{ b.id }}">
+            <strong>{{ b.nombre }}</strong>
+            {% if b.rating_promedio %}<div class="rating">★ {{ b.rating_promedio }}</div>{% endif %}
+            <div class="muted">{% for e in b.especialidades.all %}{{ e.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% else %}
+<div class="card">
+    <h2>Elegí el horario</h2>
+    <p class="muted">
+        {{ servicio.nombre }} (${{ servicio.precio }}) con <strong>{{ barbero.nombre }}</strong>
+        {% if primero_disponible %}<span class="muted">(primero disponible)</span>{% endif %}
+        — <a href="?servicio={{ servicio.id }}">cambiar</a>
+    </p>
+
+    <form method="post" id="booking-form">
+        {% csrf_token %}
+        <input type="hidden" name="fecha_hora" id="fecha_hora_input">
+
+        {% for dia in slots_por_dia %}
+        <div class="day-block">
+            <h3>{{ dia.dia|date:"l d/m" }}</h3>
+            <div class="slot-row">
+                {% for slot in dia.slots %}
+                <div class="slot" data-value="{{ slot.isoformat }}">{{ slot|date:"H:i" }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <p class="muted">No hay horarios disponibles esta semana para este peluquero.</p>
+        {% endfor %}
+
+        <div id="datos-cliente" style="display:none; margin-top:1rem;">
+            <label for="nombre">Tu nombre</label>
+            <input type="text" name="nombre" id="nombre" required>
+            <label for="telefono">Tu WhatsApp</label>
+            <input type="tel" name="telefono" id="telefono" placeholder="+54 9 11 ..." required>
+            <button type="submit" class="btn">Confirmar turno</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.querySelectorAll('.slot').forEach(function (el) {
+    el.addEventListener('click', function () {
+        document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('fecha_hora_input').value = el.dataset.value;
+        document.getElementById('datos-cliente').style.display = 'block';
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

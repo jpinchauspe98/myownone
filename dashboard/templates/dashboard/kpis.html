@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<form class="filters" method="get">
+    <div><label for="desde">Desde</label><input type="date" name="desde" id="desde" value="{{ desde|date:'Y-m-d' }}"></div>
+    <div><label for="hasta">Hasta</label><input type="date" name="hasta" id="hasta" value="{{ hasta|date:'Y-m-d' }}"></div>
+    <button type="submit">Filtrar</button>
+</form>
+
+<div class="kpi-row">
+    <div class="kpi"><div class="value">${{ facturacion_total }}</div><div class="label">Facturación total</div></div>
+    <div class="kpi"><div class="value">{{ cantidad_turnos }}</div><div class="label">Turnos completados</div></div>
+    <div class="kpi"><div class="value">${{ ticket_promedio|floatformat:0 }}</div><div class="label">Ticket promedio</div></div>
+    <div class="kpi"><div class="value">{{ tasa_recurrencia|floatformat:1 }}%</div><div class="label">Recurrencia de clientes</div></div>
+    <div class="kpi"><div class="value">{{ ocupacion|floatformat:1 }}%</div><div class="label">Ocupación de agenda (aprox.)</div></div>
+</div>
+
+<div class="card">
+    <h2>Facturación por peluquero</h2>
+    <canvas id="chartBarberos" height="90"></canvas>
+    <table>
+        <thead><tr><th>Peluquero</th><th>Turnos</th><th>Facturación</th></tr></thead>
+        <tbody>
+        {% for f in facturacion_por_barbero %}
+            <tr><td>{{ f.barbero__nombre }}</td><td>{{ f.cantidad }}</td><td>${{ f.total }}</td></tr>
+        {% empty %}
+            <tr><td colspan="3">Sin datos en este período.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Facturación por servicio</h2>
+    <canvas id="chartServicios" height="90"></canvas>
+    <table>
+        <thead><tr><th>Servicio</th><th>Turnos</th><th>Facturación</th></tr></thead>
+        <tbody>
+        {% for f in facturacion_por_servicio %}
+            <tr><td>{{ f.servicio__nombre }}</td><td>{{ f.cantidad }}</td><td>${{ f.total }}</td></tr>
+        {% empty %}
+            <tr><td colspan="3">Sin datos en este período.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+new Chart(document.getElementById('chartBarberos'), {
+    type: 'bar',
+    data: {
+        labels: [{% for f in facturacion_por_barbero %}"{{ f.barbero__nombre|escapejs }}",{% endfor %}],
+        datasets: [{ label: 'Facturación', data: [{% for f in facturacion_por_barbero %}{{ f.total }},{% endfor %}], backgroundColor: '#e94560' }]
+    },
+    options: { plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('chartServicios'), {
+    type: 'bar',
+    data: {
+        labels: [{% for f in facturacion_por_servicio %}"{{ f.servicio__nombre|escapejs }}",{% endfor %}],
+        datasets: [{ label: 'Facturación', data: [{% for f in facturacion_por_servicio %}{{ f.total }},{% endfor %}], backgroundColor: '#1a1a2e' }]
+    },
+    options: { plugins: { legend: { display: false } } }
+});
+</script>
+{% endblock %}
