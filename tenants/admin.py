@@ -10,8 +10,10 @@ class TenantAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("nombre",)}
     search_fields = ("nombre", "slug")
     readonly_fields = ("api_key",)
+    filter_horizontal = ("propietarios",)
     fieldsets = (
-        (None, {"fields": ("nombre", "slug", "plan", "activo", "direccion")}),
+        (None, {"fields": ("nombre", "slug", "plan", "activo", "direccion", "color_primario")}),
+        ("Acceso al panel", {"fields": ("propietarios",)}),
         ("WhatsApp Cloud API", {"fields": (
             "whatsapp_number", "whatsapp_phone_number_id", "whatsapp_access_token", "whatsapp_verify_token",
         )}),

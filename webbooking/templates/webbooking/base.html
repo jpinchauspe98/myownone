@@ -7,7 +7,7 @@
     <title>{% block title %}{{ tenant.nombre }}{% endblock %}</title>
     <style>
         :root {
-            --primary: #1a1a2e; --accent: #e94560; --bg: #f7f7fb; --card: #ffffff;
+            --primary: #1a1a2e; --accent: {{ tenant.color_primario|default:"#e94560" }}; --bg: #f7f7fb; --card: #ffffff;
             --text: #222; --muted: #777; --border: #e5e5ee;
         }
         * { box-sizing: border-box; }

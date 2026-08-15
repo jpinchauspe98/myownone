@@ -1,14 +1,15 @@
 import datetime
 
-from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Avg, Count, Sum
-from django.shortcuts import get_object_or_404, render
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import AuthenticationForm
+from django.db.models import Count, Sum
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from appointments.models import Turno
-from reviews.models import Resena
-from staff.models import Barbero
 from tenants.models import Tenant
+from .auth import propietario_o_superadmin_required, puede_administrar
 
 
 def _rango_fechas(request):
@@ -21,9 +22,37 @@ def _rango_fechas(request):
     return desde, hasta
 
 
-@staff_member_required
-def kpis(request, slug):
+def login_salon(request, slug):
     tenant = get_object_or_404(Tenant, slug=slug)
+    next_url = request.GET.get("next") or reverse("dashboard:kpis", args=[slug])
+
+    if puede_administrar(request.user, tenant):
+        return redirect(next_url)
+
+    error = None
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            if puede_administrar(user, tenant):
+                login(request, user)
+                return redirect(next_url)
+            error = "Ese usuario no tiene acceso al panel de este salón."
+        else:
+            error = "Usuario o contraseña incorrectos."
+    else:
+        form = AuthenticationForm(request)
+
+    return render(request, "dashboard/login.html", {"tenant": tenant, "form": form, "error": error})
+
+
+def logout_salon(request, slug):
+    logout(request)
+    return redirect("dashboard:login", slug=slug)
+
+
+@propietario_o_superadmin_required
+def kpis(request, tenant):
     desde, hasta = _rango_fechas(request)
 
     turnos_periodo = Turno.objects.filter(
@@ -70,9 +99,8 @@ def kpis(request, slug):
     })
 
 
-@staff_member_required
-def ranking_peluqueros(request, slug):
-    tenant = get_object_or_404(Tenant, slug=slug)
+@propietario_o_superadmin_required
+def ranking_peluqueros(request, tenant):
     barberos = (
         tenant.barberos.filter(activo=True)
         .annotate(cantidad_resenas=Count("resenas"))

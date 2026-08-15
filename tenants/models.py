@@ -1,5 +1,6 @@
 import secrets
 
+from django.conf import settings
 from django.db import models
 
 
@@ -48,6 +49,14 @@ class Tenant(models.Model):
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
     activo = models.BooleanField(default=True)
     direccion = models.CharField(max_length=255, blank=True)
+    color_primario = models.CharField(
+        max_length=7, default="#e94560",
+        help_text="Color de marca del salón en formato hex (ej. #e94560), usado en la mini-web y el panel",
+    )
+    propietarios = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True, related_name="salones_propios",
+        help_text="Usuarios que pueden entrar al panel de este salón. Un superusuario ve todos los salones.",
+    )
     horario_apertura = models.TimeField(default="09:00")
     horario_cierre = models.TimeField(default="20:00")
     umbral_alerta_rating = models.DecimalField(

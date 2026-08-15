@@ -6,7 +6,7 @@
     <title>{% block title %}Panel {{ tenant.nombre }}{% endblock %}</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <style>
-        :root { --primary: #1a1a2e; --accent: #e94560; --bg: #f5f5fa; --card: #fff; --border: #e5e5ee; --muted: #777; }
+        :root { --primary: #1a1a2e; --accent: {{ tenant.color_primario|default:"#e94560" }}; --bg: #f5f5fa; --card: #fff; --border: #e5e5ee; --muted: #777; }
         * { box-sizing: border-box; }
         html, body { max-width: 100%; overflow-x: hidden; }
         body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; color: #222; }
@@ -39,6 +39,7 @@
     <div>
         <a href="{% url 'dashboard:kpis' tenant.slug %}">Facturación</a>
         <a href="{% url 'dashboard:ranking_peluqueros' tenant.slug %}">Peluqueros</a>
+        <a href="{% url 'dashboard:logout' tenant.slug %}">Salir</a>
     </div>
 </nav>
 <main>{% block content %}{% endblock %}</main>

@@ -1,8 +1,12 @@
-# LEOLEIVA — SaaS de turnos para peluquerías
+# SaaS de turnos para peluquerías (multi-tenant / white-label)
 
 MVP construido desde cero en Django (sin depender de ningún esqueleto de
 terceros — ver nota de licencia más abajo). Sigue el roadmap por fases
-definido para el proyecto.
+definido para el proyecto. `LEOLEIVA` es el primer salón cargado como
+prueba, pero el sistema es multi-tenant desde el modelo de datos: un solo
+deploy sirve a todos los salones, cada uno aislado del resto (ver
+"Multi-tenant / white-label" más abajo) — el objetivo es poder prospectar
+y dar de alta clientes nuevos sin desplegar nada por cliente.
 
 ## Estado actual: Fase 0, Fase 1 y bot de WhatsApp (Fase 2 en curso)
 
@@ -25,10 +29,15 @@ definido para el proyecto.
   natural, y Forja llama a esta API de Django para consultar
   disponibilidad y reservar. Es el camino recomendado para una
   conversación humana — ver detalle más abajo.
+- **Multi-tenant / white-label**: cada salón tiene su propio login al
+  panel (no ve el de otros salones), su propio color de marca, y un
+  comando (`crear_salon`) para dar de alta un cliente nuevo en un paso.
+  Ver detalle más abajo.
 
-Todavía **no** están implementados el pago total al finalizar el
-servicio, las promociones activas en el flujo de reserva, ni el
-multi-tenant real por subdominio (Fase 3).
+Todavía **no** está resuelto el pago total al finalizar el servicio, las
+promociones activas en el flujo de reserva, ni el onboarding 100%
+self-service (que el dueño cargue sus propios peluqueros/servicios sin
+tocar `/admin/` — eso es Fase 3).
 
 ## Nota sobre el punto de partida
 
@@ -52,10 +61,17 @@ python manage.py seed_leoleiva   # datos demo: salón LEOLEIVA, 3 peluqueros, 4 
 python manage.py runserver
 ```
 
-- Admin: `/admin/`
+- Admin (superadmin, ve todos los salones): `/admin/`
 - Mini-web pública de reservas: `/salones/leoleiva/`
-- Panel del dueño (requiere usuario staff): `/panel/leoleiva/` y `/panel/leoleiva/peluqueros/`
+- Panel del dueño del salón (login propio, sólo ve SU salón): `/panel/leoleiva/`
 - Dejar reseña de un turno completado: `/salones/leoleiva/turno/<id>/resena/`
+
+El seed no crea un usuario propietario para el panel de LEOLEIVA. Para
+probarlo, creá un usuario y agregalo a `Tenant.propietarios` desde
+`/admin/` → Tenant → "Acceso al panel" (o por shell:
+`Tenant.objects.get(slug="leoleiva").propietarios.add(user)`). Para un
+salón nuevo de cero, `crear_salon` hace las dos cosas de una — ver la
+sección de abajo.
 
 Por defecto usa SQLite (`db.sqlite3`). Para Postgres, cambiar `DATABASES`
 en `config/settings.py`.
@@ -267,6 +283,81 @@ webhook de Meta a la URL de Forja en vez de
 URL por número). El bot de reglas de este repo simplemente deja de
 recibir tráfico — no hace falta borrar nada, ni hay conflicto entre los
 dos.
+
+## Multi-tenant / white-label
+
+Un solo deploy sirve a todos los salones — no hay que clonar el repo ni
+desplegar nada por cliente nuevo. Cada salón es una fila `Tenant` con su
+propio slug, su propio color de marca, sus propios datos, y (esto es lo
+que lo hace realmente entregable a un cliente) su **propio login al
+panel** que no ve nada de los demás salones.
+
+### Aislamiento entre salones
+
+Antes de esta vuelta, el panel del dueño (`/panel/<slug>/`) sólo
+chequeaba `is_staff` — cualquier usuario staff podía entrar al panel de
+CUALQUIER salón cambiando el slug en la URL. Se corrigió:
+
+- `Tenant.propietarios` (M2M a `User`) define quién puede administrar ese
+  salón puntual.
+- El panel tiene su login propio en `/panel/<slug>/login/` (branded con
+  el nombre y color del salón, no la pantalla genérica de Django admin) —
+  un dueño nunca necesita ni ve `/admin/`.
+- Un superusuario sigue viendo cualquier panel (para vos, como dueño de
+  la plataforma); un propietario normal sólo el suyo. Si intenta entrar
+  al de otro salón, `403`.
+
+**Probado en esta sesión:** creé un segundo salón de prueba
+(`barberia-test-2`) con su propio dueño, confirmé que ese usuario puede
+entrar a su panel pero recibe `403` al intentar `/panel/leoleiva/`, y que
+el superusuario sigue viendo ambos paneles sin problema.
+
+### Branding por salón
+
+`Tenant.color_primario` (hex) reemplaza el rojo hardcodeado en la
+mini-web y el panel — cada salón puede tener su propio color de marca
+desde `/admin/`. Probado: un salón nuevo con color `#1e88e5` muestra la
+mini-web y los botones en azul en vez del rojo por defecto, sin tocar
+ninguna plantilla.
+
+### Alta rápida de un salón nuevo (para prospectar)
+
+```bash
+python manage.py crear_salon \
+  --nombre "Barbería del Centro" \
+  --username barberia-del-centro_owner \
+  --whatsapp "+5491100001111" \
+  --color "#1e88e5"
+```
+
+Esto crea el `Tenant` (slug autogenerado del nombre si no se pasa
+`--slug`) y un usuario propietario listo para entrar a
+`/panel/<slug>/login/` — si no se pasa `--password`, genera una
+aleatoria y la muestra en pantalla junto con las URLs del salón. Con eso
+en mano ya podés mandarle el link al cliente. **Falta cargar a mano**
+(no lo hace el comando, a propósito — cada salón es distinto):
+peluqueros y servicios desde `/admin/`, y si corresponde, WhatsApp Cloud
+API / Mercado Pago / la API key para Forja.
+
+### Qué datos pedirle a cada peluquería antes de darle el link
+
+- Nombre del salón, dirección, horario de apertura/cierre
+- Lista de peluqueros (nombre, foto opcional, especialidades)
+- Lista de servicios con precio y duración
+- Color de marca (o se usa el rojo por defecto)
+- Si van a cobrar seña: % de seña y su cuenta de Mercado Pago
+- Si van a usar WhatsApp: número de WhatsApp Business (para el bot de
+  reglas fijas hace falta además el Phone Number ID y access token de
+  Meta; para Forja, la `api_key` del salón que ya se genera sola)
+
+### Qué NO está resuelto todavía para self-service completo
+
+Hoy cargar peluqueros/servicios/horarios sigue siendo trabajo tuyo (o del
+cliente) en `/admin/` — no hay un formulario propio en el panel para que
+el dueño del salón edite eso sin tocar el admin de Django. Eso es
+exactamente la Fase 3 del roadmap original ("onboarding self-service de
+nuevos salones"); por ahora el flujo es: vos cargás los datos del salón
+al cerrar la venta, y le das el link de login ya armado.
 
 ## Próximos pasos (no arrancar sin validar lo anterior con el cliente real)
 
