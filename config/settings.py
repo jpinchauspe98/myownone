@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "webbooking",
     "payments",
     "whatsapp_bot",
+    "api",
 ]
 
 MIDDLEWARE = [

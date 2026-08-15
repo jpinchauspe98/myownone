@@ -15,10 +15,16 @@ definido para el proyecto.
   `mp_access_token` cargado, reservar (web o WhatsApp) redirige al
   cliente al link de pago de Checkout Pro antes de confirmar el turno,
   para reducir el ausentismo. Ver detalle más abajo.
-- **Bot de WhatsApp (Meta Cloud API)**: conversación completa de reserva
-  (saludo → servicio → peluquero → horario → confirmar → seña si
-  corresponde), recordatorios 24hs/2hs antes del turno y solicitud de
-  reseña 2hs después de completado. Ver detalle más abajo.
+- **Bot de WhatsApp por reglas fijas (Meta Cloud API)**: conversación de
+  reserva con menús numerados, recordatorios 24hs/2hs antes del turno y
+  solicitud de reseña 2hs después de completado. Funciona, pero es rígido
+  ("respondé 1, 2 o 3") — no se recomienda como bot de cara al cliente.
+- **API de "tools" para Forja**: en vez de seguir puliendo el bot de
+  reglas, el salón puede conectar [Forja](https://forjabots.com) (un bot
+  con LLM real, self-hosted en Cloudflare) para que la conversación sea
+  natural, y Forja llama a esta API de Django para consultar
+  disponibilidad y reservar. Es el camino recomendado para una
+  conversación humana — ver detalle más abajo.
 
 Todavía **no** están implementados el pago total al finalizar el
 servicio, las promociones activas en el flujo de reserva, ni el
@@ -64,9 +70,10 @@ en `config/settings.py`.
 | `appointments` | `Cliente`, `Turno` (con validación de fechas pasadas y horario del salón) |
 | `reviews` | `Resena`, ligada al `Turno` y por lo tanto al `Barbero` específico |
 | `payments` | `Pago`, integración Checkout Pro (seña al reservar) + webhook |
-| `whatsapp_bot` | Bot de reservas (Meta Cloud API): webhook, state machine, recordatorios y solicitud de reseñas |
+| `whatsapp_bot` | Bot de reglas fijas (Meta Cloud API): webhook, state machine, recordatorios y solicitud de reseñas |
 | `dashboard` | KPIs de facturación y ranking de peluqueros por rating |
 | `webbooking` | Mini-web pública: elegir servicio → peluquero → horario → confirmar |
+| `api` | API de "tools" autenticada por API key, para bots externos con LLM (ej. Forja) |
 
 ## Criterios de aceptación de Fase 1 (verificados)
 
@@ -110,7 +117,12 @@ ningún turno huérfano en la base). Antes de ir a producción con un salón
 real, probar el circuito completo con credenciales de Test de Mercado
 Pago.
 
-## Bot de WhatsApp (Meta Cloud API)
+## Bot de WhatsApp por reglas fijas (Meta Cloud API)
+
+> Este bot funciona pero es un árbol de menús numerados, no una
+> conversación natural. Para eso está la sección **"API de tools para
+> Forja"** más abajo, que es el camino recomendado. Esta sección queda
+> documentada por si se prefiere no depender de un servicio externo.
 
 Cada salón tiene su propio número de WhatsApp Business y su propia app de
 Meta (no hay un único bot compartido entre tenants). Para activarlo,
@@ -161,6 +173,100 @@ comando de recordatorios a mitad de camino) que ya está corregido: los
 errores de conexión ahora se loguean y no interrumpen el resto del batch,
 igual que los errores HTTP de la propia API de Meta. Antes de producción,
 probar el envío real con una app de Meta y un número de prueba.
+
+## API de "tools" para Forja (bot con LLM real)
+
+El bot de reglas fijas de arriba responde bien pero suena a máquina.
+[Forja](https://forjabots.com) es un bot con un modelo de lenguaje real
+(Claude/GPT) que corre aparte, self-hosted en tu propio Cloudflare — no
+es algo que se despliegue desde este repo. Forja se encarga de la
+conversación (entender lenguaje natural, no sólo "respondé 1 o 2") y le
+pega por HTTP a esta API cada vez que necesita consultar servicios,
+peluqueros, horarios libres o crear una reserva. Django sigue siendo la
+única fuente de verdad de turnos, precios y disponibilidad — Forja nunca
+inventa un horario, siempre pregunta.
+
+**Setup (del lado de Forja, no de este repo):** desplegar Forja siguiendo
+su propia guía (`npx forjabot init` con Claude Code, o manual con
+`wrangler`), y ahí cargar como "tools" los endpoints de abajo. No pude
+leer la guía completa de Forja desde este entorno (su web está bloqueada
+por la política de red de la sandbox), así que puede que los nombres de
+campos que Forja pide en su dashboard no sean idénticos a los de acá —
+la forma y la lógica de cada endpoint sí están resueltas y probadas.
+
+### Autenticación
+
+Cada salón tiene su propio `api_key` (se genera solo al crear el
+`Tenant`, visible en `/admin/` → Tenant → "Integraciones externas").
+Todos los endpoints van con:
+
+```
+Authorization: Bearer <api_key-del-salon>
+```
+
+Base URL: `https://<tu-dominio>/api/v1/<slug-del-salon>/`
+
+### Endpoints (tools)
+
+**1. Listar servicios**
+`GET /api/v1/<slug>/servicios/`
+```json
+{"servicios": [{"id": 2, "nombre": "Corte clásico", "precio": 8000.0, "duracion_min": 30, "categoria": "Cortes"}]}
+```
+
+**2. Listar peluqueros**
+`GET /api/v1/<slug>/peluqueros/`
+```json
+{"peluqueros": [{"id": 2, "nombre": "Leo Leiva", "rating_promedio": 4.4, "especialidades": ["Fade", "Clásico"]}]}
+```
+
+**3. Consultar horarios libres**
+`GET /api/v1/<slug>/horarios-disponibles/?servicio_id=2&peluquero_id=2`
+(`peluquero_id` es opcional: sin él, o con `peluquero_id=primero_disponible`, elige el de mejor rating)
+```json
+{"peluquero_id": 2, "peluquero_nombre": "Leo Leiva", "dias": [
+  {"fecha": "2026-08-15", "horarios": [{"fecha_hora": "2026-08-15T17:00:00-03:00", "hora": "17:00"}]}
+]}
+```
+
+**4. Crear turno**
+`POST /api/v1/<slug>/turnos/`
+```json
+{"servicio_id": 2, "peluquero_id": 2, "fecha_hora": "2026-08-15T17:00:00-03:00", "cliente_nombre": "Marina", "cliente_telefono": "+5491166667777"}
+```
+`peluquero_id` es opcional (mismo criterio que arriba). Si el salón tiene
+la seña activada, la respuesta trae `requiere_pago: true` y `link_pago`
+(el bot le pasa ese link al cliente); si no, el turno queda `confirmado`
+directo. Si falla la generación del link de pago, responde `502` y no
+crea el turno — no quedan reservas fantasma.
+
+**5. Estado de un turno**
+`GET /api/v1/<slug>/turnos/<turno_id>/` — para que el bot confirme si la
+seña ya se acreditó antes de decirle al cliente que está todo listo.
+
+**6. Cancelar un turno**
+`POST /api/v1/<slug>/turnos/<turno_id>/cancelar/` — `409` si ya estaba
+completado o cancelado.
+
+Todos los errores devuelven JSON con una clave `"error"` (ej.
+`{"error": "servicio_no_encontrado"}`) y el código HTTP correspondiente
+(400/401/404/409/502), para que el LLM de Forja pueda decidir qué decirle
+al cliente en vez de romperse con una excepción.
+
+**Probado en esta sesión** con `curl` autenticado: los 6 endpoints, el
+rechazo sin API key o con una inválida (401), validaciones de campos
+faltantes y fecha pasada (400), servicio/peluquero inexistente (404),
+doble cancelación (409), y el caso de seña con token de Mercado Pago
+inválido (502, sin turno huérfano). No se probó contra una instancia real
+de Forja por no tener acceso a una en este entorno — el contrato HTTP de
+cada endpoint sí quedó verificado de punta a punta.
+
+**Sobre el bot de reglas fijas:** si se conecta Forja, hay que apuntar el
+webhook de Meta a la URL de Forja en vez de
+`/whatsapp/<slug>/webhook/` de Django (Meta sólo manda los mensajes a una
+URL por número). El bot de reglas de este repo simplemente deja de
+recibir tráfico — no hace falta borrar nada, ni hay conflicto entre los
+dos.
 
 ## Próximos pasos (no arrancar sin validar lo anterior con el cliente real)
 

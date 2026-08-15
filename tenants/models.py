@@ -1,4 +1,10 @@
+import secrets
+
 from django.db import models
+
+
+def _generar_api_key():
+    return secrets.token_urlsafe(32)
 
 
 class Tenant(models.Model):
@@ -47,6 +53,10 @@ class Tenant(models.Model):
     umbral_alerta_rating = models.DecimalField(
         max_digits=3, decimal_places=2, default=3.5,
         help_text="Si el rating promedio de un peluquero cae debajo de este valor, se genera una alerta",
+    )
+    api_key = models.CharField(
+        max_length=64, unique=True, default=_generar_api_key, editable=False,
+        help_text="Usada por integraciones externas (ej. Forja) para autenticarse contra la API de turnos de este salón",
     )
     creado = models.DateTimeField(auto_now_add=True)
 

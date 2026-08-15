@@ -27,6 +27,7 @@ urlpatterns = [
     path("salones/", include("reviews.urls")),
     path("salones/", include("payments.urls")),
     path("whatsapp/", include("whatsapp_bot.urls")),
+    path("api/v1/", include("api.urls")),
 ]
 
 if settings.DEBUG:

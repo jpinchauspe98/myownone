@@ -9,6 +9,7 @@ class TenantAdmin(admin.ModelAdmin):
     list_filter = ("plan", "activo", "sena_habilitada")
     prepopulated_fields = {"slug": ("nombre",)}
     search_fields = ("nombre", "slug")
+    readonly_fields = ("api_key",)
     fieldsets = (
         (None, {"fields": ("nombre", "slug", "plan", "activo", "direccion")}),
         ("WhatsApp Cloud API", {"fields": (
@@ -17,4 +18,5 @@ class TenantAdmin(admin.ModelAdmin):
         ("Horario", {"fields": ("horario_apertura", "horario_cierre")}),
         ("Mercado Pago", {"fields": ("mp_access_token", "sena_habilitada", "sena_porcentaje")}),
         ("Reseñas", {"fields": ("umbral_alerta_rating",)}),
+        ("Integraciones externas (ej. Forja)", {"fields": ("api_key",)}),
     )
