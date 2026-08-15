@@ -1,9 +1,13 @@
+import io
 import json
 import logging
 
+from django.conf import settings
+from django.core.management import call_command
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 
 from tenants.models import Tenant
 from . import conversation
@@ -74,3 +78,46 @@ def _procesar_evento(request, tenant):
                     logger.exception(
                         "Error procesando mensaje de WhatsApp tenant=%s telefono=%s", tenant.slug, telefono
                     )
+
+
+def _cron_autorizado(request):
+    """Vercel Cron manda 'Authorization: Bearer <CRON_SECRET>' solo si se
+    configuró la env var CRON_SECRET en el proyecto. También se acepta
+    ?secret=... para poder dispararlo a mano o desde otro scheduler."""
+    if not settings.CRON_SECRET:
+        return False
+    auth = request.headers.get("Authorization", "")
+    token = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else request.GET.get("secret", "")
+    return token == settings.CRON_SECRET
+
+
+@require_GET
+def cron_enviar_recordatorios(request):
+    if not _cron_autorizado(request):
+        return HttpResponseForbidden("no autorizado")
+    out = io.StringIO()
+    call_command("enviar_recordatorios", stdout=out)
+    return HttpResponse(out.getvalue(), content_type="text/plain")
+
+
+@require_GET
+def cron_solicitar_resenas(request):
+    if not _cron_autorizado(request):
+        return HttpResponseForbidden("no autorizado")
+    out = io.StringIO()
+    call_command("solicitar_resenas", stdout=out)
+    return HttpResponse(out.getvalue(), content_type="text/plain")
+
+
+@require_GET
+def migrar(request):
+    """Dispara `migrate` contra la base configurada. Pensado para correrlo
+    a mano una vez después de cada deploy con cambios de modelos, en un
+    hosting serverless donde no hay una consola para correr manage.py
+    directamente. migrate es idempotente, así que no pasa nada si se
+    llama de más."""
+    if not _cron_autorizado(request):
+        return HttpResponseForbidden("no autorizado")
+    out = io.StringIO()
+    call_command("migrate", stdout=out)
+    return HttpResponse(out.getvalue(), content_type="text/plain")

@@ -20,6 +20,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from whatsapp_bot import views as whatsapp_views
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("panel/<slug:slug>/", include("dashboard.urls")),
@@ -28,6 +30,9 @@ urlpatterns = [
     path("salones/", include("payments.urls")),
     path("whatsapp/", include("whatsapp_bot.urls")),
     path("api/v1/", include("api.urls")),
+    path("cron/enviar-recordatorios/", whatsapp_views.cron_enviar_recordatorios, name="cron_recordatorios"),
+    path("cron/solicitar-resenas/", whatsapp_views.cron_solicitar_resenas, name="cron_resenas"),
+    path("cron/migrar/", whatsapp_views.migrar, name="cron_migrar"),
 ]
 
 if settings.DEBUG:

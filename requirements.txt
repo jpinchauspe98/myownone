@@ -2,3 +2,5 @@ Django==5.2.17
 Pillow==12.3.0
 mercadopago==3.5.0
 requests==2.34.2
+whitenoise==6.12.0
+psycopg[binary]==3.3.4

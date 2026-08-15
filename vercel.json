@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "config/wsgi.py": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/config/wsgi.py" }
+  ],
+  "crons": [
+    { "path": "/cron/enviar-recordatorios/", "schedule": "*/15 * * * *" },
+    { "path": "/cron/solicitar-resenas/", "schedule": "*/15 * * * *" }
+  ]
+}
