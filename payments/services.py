@@ -36,9 +36,11 @@ def _sdk(tenant):
     return mercadopago.SDK(tenant.mp_access_token)
 
 
-def crear_preferencia_sena(request, turno):
+def crear_preferencia_sena(base_url, turno):
     """Crea una preferencia de Checkout Pro para la seña de `turno` y
     devuelve (pago, init_point) con el link de pago hosteado por Mercado Pago.
+    `base_url` es el origen absoluto del sitio (ej. https://leoleiva.com,
+    sin barra final) usado para las back_urls y el webhook.
     """
     tenant = turno.tenant
     sdk = _sdk(tenant)
@@ -48,7 +50,6 @@ def crear_preferencia_sena(request, turno):
         turno=turno, concepto=Pago.Concepto.SENA, monto=monto, estado=Pago.Estado.PENDIENTE,
     )
 
-    base_url = request.build_absolute_uri("/")[:-1]
     back_urls = {
         "success": base_url + reverse("payments:retorno", args=[tenant.slug, turno.id]) + "?estado=success",
         "pending": base_url + reverse("payments:retorno", args=[tenant.slug, turno.id]) + "?estado=pending",

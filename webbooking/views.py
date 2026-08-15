@@ -2,16 +2,13 @@ import datetime
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 
 from appointments.models import Cliente, Turno
+from appointments.services import slots_disponibles
 from catalog.models import Servicio
-from payments import services
+from payments import services as payment_services
 from staff.models import Barbero
 from tenants.models import Tenant
-
-SLOT_STEP_MIN = 30
-DIAS_A_MOSTRAR = 7
 
 
 def _get_tenant(slug):
@@ -25,33 +22,6 @@ def salon_home(request, slug):
     return render(request, "webbooking/home.html", {
         "tenant": tenant, "servicios": servicios, "barberos": barberos,
     })
-
-
-def _slots_disponibles(tenant, barbero, servicio, dias=DIAS_A_MOSTRAR):
-    """Genera horarios libres para un barbero según horario del salón,
-    la duración del servicio y los turnos ya ocupados. No permite horarios
-    pasados."""
-    ahora = timezone.localtime()
-    ocupados = set(
-        tenant.turnos.filter(
-            barbero=barbero,
-            estado__in=[Turno.Estado.PENDIENTE, Turno.Estado.CONFIRMADO],
-        ).values_list("fecha_hora", flat=True)
-    )
-    slots_por_dia = []
-    for offset in range(dias):
-        dia = (ahora + datetime.timedelta(days=offset)).date()
-        inicio = datetime.datetime.combine(dia, tenant.horario_apertura, tzinfo=ahora.tzinfo)
-        fin = datetime.datetime.combine(dia, tenant.horario_cierre, tzinfo=ahora.tzinfo)
-        cursor = inicio
-        libres = []
-        while cursor + datetime.timedelta(minutes=servicio.duracion_min) <= fin:
-            if cursor > ahora and cursor not in ocupados:
-                libres.append(cursor)
-            cursor += datetime.timedelta(minutes=SLOT_STEP_MIN)
-        if libres:
-            slots_por_dia.append({"dia": dia, "slots": libres})
-    return slots_por_dia
 
 
 def reservar(request, slug):
@@ -75,7 +45,7 @@ def reservar(request, slug):
     slots_por_dia = []
     monto_sena = None
     if servicio and barbero:
-        slots_por_dia = _slots_disponibles(tenant, barbero, servicio)
+        slots_por_dia = slots_disponibles(tenant, barbero, servicio)
         if tenant.sena_habilitada and tenant.mp_access_token:
             monto_sena = round(servicio.precio * tenant.sena_porcentaje / 100, 2)
 
@@ -99,9 +69,10 @@ def reservar(request, slug):
             )
 
             if requiere_sena:
+                base_url = request.build_absolute_uri("/")[:-1]
                 try:
-                    _, init_point = services.crear_preferencia_sena(request, turno)
-                except (services.MercadoPagoNoConfigurado, services.MercadoPagoError):
+                    _, init_point = payment_services.crear_preferencia_sena(base_url, turno)
+                except (payment_services.MercadoPagoNoConfigurado, payment_services.MercadoPagoError):
                     turno.delete()
                     messages.error(
                         request,

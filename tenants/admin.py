@@ -11,7 +11,9 @@ class TenantAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "slug")
     fieldsets = (
         (None, {"fields": ("nombre", "slug", "plan", "activo", "direccion")}),
-        ("WhatsApp", {"fields": ("whatsapp_number",)}),
+        ("WhatsApp Cloud API", {"fields": (
+            "whatsapp_number", "whatsapp_phone_number_id", "whatsapp_access_token", "whatsapp_verify_token",
+        )}),
         ("Horario", {"fields": ("horario_apertura", "horario_cierre")}),
         ("Mercado Pago", {"fields": ("mp_access_token", "sena_habilitada", "sena_porcentaje")}),
         ("Reseñas", {"fields": ("umbral_alerta_rating",)}),

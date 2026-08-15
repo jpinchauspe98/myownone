@@ -42,6 +42,12 @@ class Turno(models.Model):
     sena_pagada = models.BooleanField(default=False)
     pago_id_mp = models.CharField(max_length=100, blank=True)
     resena_solicitada = models.BooleanField(default=False)
+    completado_en = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Se completa solo cuando el turno pasa a estado 'completado', para disparar la solicitud de reseña 2hs después",
+    )
+    recordatorio_24h_enviado = models.BooleanField(default=False)
+    recordatorio_2h_enviado = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -61,5 +67,8 @@ class Turno(models.Model):
             raise ValidationError("No se pueden crear turnos en fechas pasadas.")
 
     def save(self, *args, **kwargs):
+        from django.utils import timezone
         self.clean()
+        if self.estado == self.Estado.COMPLETADO and self.completado_en is None:
+            self.completado_en = timezone.now()
         super().save(*args, **kwargs)

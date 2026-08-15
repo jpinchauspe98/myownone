@@ -120,6 +120,13 @@ USE_I18N = True
 
 USE_TZ = True
 
+# URL pública del sitio (sin barra final). Se usa para armar links de pago
+# y de reseñas desde contextos sin request: el bot de WhatsApp y los
+# comandos de cron (recordatorios, solicitud de reseñas). En producción
+# se sobreescribe con la variable de entorno SITE_BASE_URL.
+import os
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "http://localhost:8000")
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

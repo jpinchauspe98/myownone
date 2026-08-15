@@ -15,6 +15,18 @@ class Tenant(models.Model):
         max_length=20, blank=True,
         help_text="Número de WhatsApp Business del salón, formato E.164",
     )
+    whatsapp_phone_number_id = models.CharField(
+        max_length=50, blank=True,
+        help_text="Phone Number ID de Meta WhatsApp Cloud API (Meta for Developers → WhatsApp → API Setup)",
+    )
+    whatsapp_access_token = models.CharField(
+        max_length=512, blank=True,
+        help_text="Access token permanente de la app de Meta para enviar mensajes por este número",
+    )
+    whatsapp_verify_token = models.CharField(
+        max_length=100, blank=True,
+        help_text="Token propio (lo inventás vos) usado para verificar el webhook en Meta for Developers",
+    )
     mp_access_token = models.CharField(
         max_length=255, blank=True,
         help_text="Access token (Production o Test) de la cuenta de Mercado Pago del salón",
