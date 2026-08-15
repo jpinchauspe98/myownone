@@ -8,23 +8,29 @@
     <style>
         :root { --primary: #1a1a2e; --accent: #e94560; --bg: #f5f5fa; --card: #fff; --border: #e5e5ee; --muted: #777; }
         * { box-sizing: border-box; }
+        html, body { max-width: 100%; overflow-x: hidden; }
         body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; color: #222; }
-        nav { background: var(--primary); color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-        nav a { color: #fff; text-decoration: none; margin-left: 1rem; opacity: 0.85; font-size: 0.9rem; }
+        nav { background: var(--primary); color: #fff; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; justify-content: space-between; align-items: center; }
+        nav div { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+        nav a { color: #fff; text-decoration: none; opacity: 0.85; font-size: 0.9rem; }
         nav a:hover { opacity: 1; }
         main { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
-        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-        .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
-        .kpi .value { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; min-width: 0; }
+        .kpi .value { font-size: 1.6rem; font-weight: 700; color: var(--accent); word-break: break-word; }
         .kpi .label { color: var(--muted); font-size: 0.8rem; }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-        .filters { display: flex; gap: 0.75rem; align-items: end; margin-bottom: 1.25rem; }
-        .filters label { font-size: 0.8rem; color: var(--muted); display: block; }
+        .filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin-bottom: 1.25rem; }
         .filters input, .filters button { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; }
+        .filters label { font-size: 0.8rem; color: var(--muted); display: block; }
         .filters button { background: var(--accent); color: #fff; border: none; cursor: pointer; }
         .badge-alerta { background: #fdecea; color: #b3261e; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; }
+        @media (max-width: 480px) {
+            main { padding: 1rem; }
+            nav { padding: 0.85rem 1rem; }
+        }
     </style>
 </head>
 <body>
