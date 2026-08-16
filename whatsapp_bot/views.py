@@ -152,3 +152,33 @@ def setup_inicial(request):
         f"superusuario 'admin' {'creado' if creado else 'actualizado'}\n\n{out.getvalue()}",
         content_type="text/plain",
     )
+
+
+@require_GET
+def crear_salon_remoto(request):
+    """Wrapper HTTP del comando crear_salon, para poder dar de alta un
+    salón nuevo en producción sin acceso a una consola. Recibe los mismos
+    parámetros que el comando por query string."""
+    if not _cron_autorizado(request):
+        return HttpResponseForbidden("no autorizado")
+
+    nombre = request.GET.get("nombre")
+    username = request.GET.get("username")
+    if not (nombre and username):
+        return HttpResponse("faltan ?nombre=...&username=...", status=400, content_type="text/plain")
+
+    args = ["--nombre", nombre, "--username", username]
+    for flag, param in [
+        ("--slug", "slug"), ("--whatsapp", "whatsapp"), ("--password", "password"),
+        ("--email", "email"), ("--color", "color"),
+    ]:
+        value = request.GET.get(param)
+        if value:
+            args += [flag, value]
+
+    out = io.StringIO()
+    try:
+        call_command("crear_salon", *args, stdout=out)
+    except Exception as exc:
+        return HttpResponse(f"error: {exc}", status=400, content_type="text/plain")
+    return HttpResponse(out.getvalue(), content_type="text/plain")

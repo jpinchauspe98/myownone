@@ -34,6 +34,7 @@ urlpatterns = [
     path("cron/solicitar-resenas/", whatsapp_views.cron_solicitar_resenas, name="cron_resenas"),
     path("cron/migrar/", whatsapp_views.migrar, name="cron_migrar"),
     path("cron/setup-inicial/", whatsapp_views.setup_inicial, name="cron_setup_inicial"),
+    path("cron/crear-salon/", whatsapp_views.crear_salon_remoto, name="cron_crear_salon"),
 ]
 
 if settings.DEBUG:
