@@ -121,3 +121,34 @@ def migrar(request):
     out = io.StringIO()
     call_command("migrate", stdout=out)
     return HttpResponse(out.getvalue(), content_type="text/plain")
+
+
+@require_GET
+def setup_inicial(request):
+    """Crea el superusuario inicial (o le resetea la contraseña si ya
+    existe) y siembra el tenant demo LEOLEIVA. Pensado para correrse una
+    sola vez después del primer deploy en un hosting sin consola. La
+    contraseña viene por query param (?password=...) para no dejarla
+    hardcodeada en el código."""
+    if not _cron_autorizado(request):
+        return HttpResponseForbidden("no autorizado")
+
+    password = request.GET.get("password")
+    if not password:
+        return HttpResponse("falta ?password=... en la URL", status=400, content_type="text/plain")
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    user, creado = User.objects.get_or_create(username="admin", defaults={"is_staff": True, "is_superuser": True})
+    user.is_staff = True
+    user.is_superuser = True
+    user.set_password(password)
+    user.save()
+
+    out = io.StringIO()
+    call_command("seed_leoleiva", stdout=out)
+
+    return HttpResponse(
+        f"superusuario 'admin' {'creado' if creado else 'actualizado'}\n\n{out.getvalue()}",
+        content_type="text/plain",
+    )

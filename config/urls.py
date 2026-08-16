@@ -33,6 +33,7 @@ urlpatterns = [
     path("cron/enviar-recordatorios/", whatsapp_views.cron_enviar_recordatorios, name="cron_recordatorios"),
     path("cron/solicitar-resenas/", whatsapp_views.cron_solicitar_resenas, name="cron_resenas"),
     path("cron/migrar/", whatsapp_views.migrar, name="cron_migrar"),
+    path("cron/setup-inicial/", whatsapp_views.setup_inicial, name="cron_setup_inicial"),
 ]
 
 if settings.DEBUG:
