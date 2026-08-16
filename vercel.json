@@ -1,12 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "config/wsgi.py": {
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/config/wsgi.py" }
+  "builds": [
+    { "src": "config/wsgi.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "config/wsgi.py" }
   ],
   "crons": [
     { "path": "/cron/enviar-recordatorios/", "schedule": "0 13 * * *" },
