@@ -1,0 +1,24 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>Clientes</h2>
+    <form class="filters" method="get">
+        <div><label for="q">Buscar</label><input type="text" name="q" id="q" value="{{ q }}" placeholder="Nombre o teléfono"></div>
+        <button type="submit">Buscar</button>
+    </form>
+    <table>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Turnos</th></tr></thead>
+        <tbody>
+        {% for c in clientes %}
+            <tr class="link-row" onclick="location.href='{% url 'dashboard:cliente_detalle' tenant.slug c.id %}'">
+                <td>{{ c.nombre }}</td>
+                <td>{{ c.telefono }}</td>
+                <td>{{ c.cantidad_turnos }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="3" class="empty">Todavía no hay clientes cargados.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

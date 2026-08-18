@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>Inventario</h2>
+    <table>
+        <thead><tr><th>Producto</th><th>Precio</th><th>Stock</th></tr></thead>
+        <tbody>
+        {% for p in productos %}
+            <tr>
+                <td>{{ p.nombre }}</td>
+                <td>${{ p.precio }}</td>
+                <td>
+                    {{ p.stock }}
+                    {% if p.stock <= 3 %}<span class="badge stock-bajo">Stock bajo</span>{% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="3" class="empty">Todavía no hay productos cargados. Agregalos desde /admin/.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Registrar venta</h2>
+    <form class="filters" method="post" action="{% url 'dashboard:registrar_venta' tenant.slug %}">
+        {% csrf_token %}
+        <div>
+            <label for="producto">Producto</label>
+            <select name="producto" id="producto" required>
+                {% for p in productos %}
+                <option value="{{ p.id }}" {% if p.stock <= 0 %}disabled{% endif %}>{{ p.nombre }} (${{ p.precio }}, quedan {{ p.stock }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="cantidad">Cantidad</label>
+            <input type="number" name="cantidad" id="cantidad" value="1" min="1" required>
+        </div>
+        <div>
+            <label for="cliente">Cliente (opcional)</label>
+            <select name="cliente" id="cliente">
+                <option value="">— Venta de mostrador —</option>
+                {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit">Registrar venta</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Ventas recientes</h2>
+    <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Cant.</th><th>Cliente</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for v in ventas_recientes %}
+            <tr>
+                <td>{{ v.creado|date:"d/m/Y H:i" }}</td>
+                <td>{{ v.producto.nombre }}</td>
+                <td>{{ v.cantidad }}</td>
+                <td>{{ v.cliente.nombre|default:"Mostrador" }}</td>
+                <td>${{ v.total }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="empty">Todavía no se registraron ventas.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -7,9 +7,10 @@
 </form>
 
 <div class="kpi-row">
-    <div class="kpi"><div class="value">${{ facturacion_total }}</div><div class="label">Facturación total</div></div>
+    <div class="kpi"><div class="value">${{ facturacion_total }}</div><div class="label">Facturación total (servicios + productos)</div></div>
+    <div class="kpi"><div class="value">${{ facturacion_productos }}</div><div class="label">Facturación por productos</div></div>
     <div class="kpi"><div class="value">{{ cantidad_turnos }}</div><div class="label">Turnos completados</div></div>
-    <div class="kpi"><div class="value">${{ ticket_promedio|floatformat:0 }}</div><div class="label">Ticket promedio</div></div>
+    <div class="kpi"><div class="value">${{ ticket_promedio|floatformat:0 }}</div><div class="label">Ticket promedio (servicios)</div></div>
     <div class="kpi"><div class="value">{{ tasa_recurrencia|floatformat:1 }}%</div><div class="label">Recurrencia de clientes</div></div>
     <div class="kpi"><div class="value">{{ ocupacion|floatformat:1 }}%</div><div class="label">Ocupación de agenda (aprox.)</div></div>
 </div>
@@ -39,6 +40,20 @@
             <tr><td>{{ f.servicio__nombre }}</td><td>{{ f.cantidad }}</td><td>${{ f.total }}</td></tr>
         {% empty %}
             <tr><td colspan="3">Sin datos en este período.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Facturación por producto vendido</h2>
+    <table>
+        <thead><tr><th>Producto</th><th>Unidades</th><th>Facturación</th></tr></thead>
+        <tbody>
+        {% for f in facturacion_por_producto %}
+            <tr><td>{{ f.producto__nombre }}</td><td>{{ f.cantidad }}</td><td>${{ f.total }}</td></tr>
+        {% empty %}
+            <tr><td colspan="3">Sin ventas de productos en este período.</td></tr>
         {% endfor %}
         </tbody>
     </table>

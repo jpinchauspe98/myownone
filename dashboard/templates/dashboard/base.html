@@ -10,38 +10,71 @@
         * { box-sizing: border-box; }
         html, body { max-width: 100%; overflow-x: hidden; }
         body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; color: #222; }
-        nav { background: var(--primary); color: #fff; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; justify-content: space-between; align-items: center; }
-        nav div { display: flex; flex-wrap: wrap; gap: 0 1rem; }
-        nav a { color: #fff; text-decoration: none; opacity: 0.85; font-size: 0.9rem; }
-        nav a:hover { opacity: 1; }
+        header.top { background: var(--primary); color: #fff; padding: 0.9rem 1.25rem; display: flex; justify-content: space-between; align-items: center; }
+        header.top strong { font-size: 0.95rem; }
+        header.top a { color: #fff; text-decoration: none; opacity: 0.75; font-size: 0.85rem; }
+        nav.tabs { background: var(--primary); display: flex; gap: 0.25rem; overflow-x: auto; padding: 0 0.75rem 0.6rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        nav.tabs::-webkit-scrollbar { display: none; }
+        nav.tabs a {
+            flex: none; color: #fff; text-decoration: none; opacity: 0.68; font-size: 0.85rem;
+            padding: 0.4rem 0.8rem; border-radius: 999px; white-space: nowrap;
+        }
+        nav.tabs a.active { opacity: 1; background: rgba(255,255,255,0.16); font-weight: 600; }
+        nav.tabs a:hover { opacity: 1; }
         main { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
         .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; min-width: 0; }
         .kpi .value { font-size: 1.6rem; font-weight: 700; color: var(--accent); word-break: break-word; }
         .kpi .label { color: var(--muted); font-size: 0.8rem; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; overflow-x: auto; }
+        .card h2 { margin-top: 0; font-size: 1.05rem; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        tr.link-row { cursor: pointer; }
+        tr.link-row:hover { background: var(--bg); }
         .filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin-bottom: 1.25rem; }
-        .filters input, .filters button { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; }
+        .filters input, .filters select, .filters button { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
         .filters label { font-size: 0.8rem; color: var(--muted); display: block; }
         .filters button { background: var(--accent); color: #fff; border: none; cursor: pointer; }
         .badge-alerta { background: #fdecea; color: #b3261e; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; }
+        .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .badge.ok { background: #e3f3e6; color: #2e6b3e; }
+        .badge.pend { background: #fdf3d8; color: #8a5b0e; }
+        .badge.bad { background: #fdecea; color: #b3261e; }
+        .badge.stock-bajo { background: #fdecea; color: #b3261e; }
+        .muted { color: var(--muted); font-size: 0.85rem; }
+        .empty { color: var(--muted); text-align: center; padding: 1.5rem 0; }
+        .messages { list-style: none; padding: 0; margin: 0 0 1rem; }
+        .messages li { padding: 0.6rem 0.9rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .messages li.success { background: #e3f3e6; color: #2e6b3e; }
+        .messages li.error { background: #fdecea; color: #b3261e; }
+        .bubble { max-width: 80%; padding: 0.5rem 0.75rem; border-radius: 10px; margin-bottom: 0.5rem; font-size: 0.88rem; }
+        .bubble.in { background: #fff; border: 1px solid var(--border); margin-right: auto; }
+        .bubble.out { background: var(--accent); color: #fff; margin-left: auto; }
+        .bubble .meta { display: block; font-size: 0.72rem; opacity: 0.65; margin-top: 0.2rem; }
         @media (max-width: 480px) {
             main { padding: 1rem; }
-            nav { padding: 0.85rem 1rem; }
         }
     </style>
 </head>
 <body>
-<nav>
+<header class="top">
     <strong>{{ tenant.nombre }} · Panel</strong>
-    <div>
-        <a href="{% url 'dashboard:kpis' tenant.slug %}">Facturación</a>
-        <a href="{% url 'dashboard:ranking_peluqueros' tenant.slug %}">Peluqueros</a>
-        <a href="{% url 'dashboard:logout' tenant.slug %}">Salir</a>
-    </div>
+    <a href="{% url 'dashboard:logout' tenant.slug %}">Salir</a>
+</header>
+<nav class="tabs">
+    <a href="{% url 'dashboard:kpis' tenant.slug %}" class="{% if request.resolver_match.url_name == 'kpis' %}active{% endif %}">Facturación</a>
+    <a href="{% url 'dashboard:turnos' tenant.slug %}" class="{% if request.resolver_match.url_name == 'turnos' %}active{% endif %}">Turnos</a>
+    <a href="{% url 'dashboard:clientes' tenant.slug %}" class="{% if request.resolver_match.url_name in 'clientes,cliente_detalle' %}active{% endif %}">Clientes</a>
+    <a href="{% url 'dashboard:productos' tenant.slug %}" class="{% if request.resolver_match.url_name == 'productos' %}active{% endif %}">Productos</a>
+    <a href="{% url 'dashboard:whatsapp' tenant.slug %}" class="{% if request.resolver_match.url_name == 'whatsapp' %}active{% endif %}">WhatsApp</a>
+    <a href="{% url 'dashboard:ranking_peluqueros' tenant.slug %}" class="{% if request.resolver_match.url_name == 'ranking_peluqueros' %}active{% endif %}">Peluqueros</a>
 </nav>
-<main>{% block content %}{% endblock %}</main>
+<main>
+    {% if messages %}
+    <ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
 </body>
 </html>

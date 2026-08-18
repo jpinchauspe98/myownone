@@ -1,0 +1,21 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>Atención al cliente por WhatsApp</h2>
+    {% if not tenant.whatsapp_phone_number_id and not tenant.api_key %}
+    <p class="muted">Todavía no hay conversaciones. Conectá el bot de WhatsApp (Meta Cloud API) o Forja desde el admin del salón.</p>
+    {% endif %}
+    <p class="muted">{{ telefonos|length }} conversación{{ telefonos|length|pluralize:"es" }} reciente{{ telefonos|length|pluralize }}.</p>
+
+    <div style="display:flex; flex-direction:column;">
+    {% for m in mensajes %}
+        <div class="bubble {{ m.direccion }}">
+            {{ m.contenido|linebreaksbr }}
+            <span class="meta">{{ m.cliente_telefono }} · {{ m.timestamp|date:"d/m H:i" }}</span>
+        </div>
+    {% empty %}
+        <p class="empty">Sin mensajes todavía.</p>
+    {% endfor %}
+    </div>
+</div>
+{% endblock %}

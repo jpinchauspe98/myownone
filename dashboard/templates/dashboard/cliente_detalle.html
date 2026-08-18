@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>{{ cliente.nombre }}</h2>
+    <p class="muted">{{ cliente.telefono }}{% if cliente.email %} · {{ cliente.email }}{% endif %}</p>
+    <p><strong>Total gastado:</strong> ${{ total_gastado }}</p>
+</div>
+
+<div class="card">
+    <h2>Tratamientos realizados</h2>
+    <table>
+        <thead><tr><th>Fecha</th><th>Servicio</th><th>Peluquero</th><th>Estado</th><th>Monto</th></tr></thead>
+        <tbody>
+        {% for t in turnos %}
+            <tr>
+                <td>{{ t.fecha_hora|date:"d/m/Y H:i" }}</td>
+                <td>{{ t.servicio.nombre }}</td>
+                <td>{{ t.barbero.nombre }}</td>
+                <td>
+                    {% if t.estado == "completado" %}<span class="badge ok">Completado</span>
+                    {% elif t.estado == "cancelado" or t.estado == "no_show" %}<span class="badge bad">{{ t.get_estado_display }}</span>
+                    {% else %}<span class="badge pend">{{ t.get_estado_display }}</span>{% endif %}
+                </td>
+                <td>${{ t.monto }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="empty">Todavía no tuvo turnos.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Productos comprados</h2>
+    <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for v in compras %}
+            <tr>
+                <td>{{ v.creado|date:"d/m/Y" }}</td>
+                <td>{{ v.producto.nombre }}</td>
+                <td>{{ v.cantidad }}</td>
+                <td>${{ v.total }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="empty">Todavía no compró productos.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
