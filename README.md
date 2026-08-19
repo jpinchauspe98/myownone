@@ -33,6 +33,13 @@ y dar de alta clientes nuevos sin desplegar nada por cliente.
   panel (no ve el de otros salones), su propio color de marca, y un
   comando (`crear_salon`) para dar de alta un cliente nuevo en un paso.
   Ver detalle más abajo.
+- **Panel del dueño completo**: además de los KPIs de facturación, el
+  panel tiene menú con Turnos (qué tratamientos se hicieron y su estado),
+  Clientes (búsqueda + ficha con historial de turnos, compras, cuántas
+  veces vino y reseñas que dejó), Productos (inventario + registrar venta
+  con descuento automático de stock), Reseñas (comentarios reales de
+  clientes por peluquero, no solo el promedio) y WhatsApp (log de la
+  conversación de atención al cliente). Ver "Estructura de apps" abajo.
 
 Todavía **no** está resuelto el pago total al finalizar el servicio, las
 promociones activas en el flujo de reserva, ni el onboarding 100%
@@ -64,6 +71,7 @@ python manage.py runserver
 - Admin (superadmin, ve todos los salones): `/admin/`
 - Mini-web pública de reservas: `/salones/leoleiva/`
 - Panel del dueño del salón (login propio, sólo ve SU salón): `/panel/leoleiva/`
+  (tabs: Facturación, Turnos, Clientes, Productos, Reseñas, WhatsApp, Peluqueros)
 - Dejar reseña de un turno completado: `/salones/leoleiva/turno/<id>/resena/`
 
 El seed no crea un usuario propietario para el panel de LEOLEIVA. Para
@@ -83,11 +91,11 @@ en `config/settings.py`.
 | `tenants` | Modelo `Tenant` (salón) + middleware de resolución por slug |
 | `staff` | `Barbero`, `Especialidad`, rating y disponibilidad semanal |
 | `catalog` | `Servicio`, `CategoriaServicio`, `Producto`, `Promocion` |
-| `appointments` | `Cliente`, `Turno` (con validación de fechas pasadas y horario del salón) |
+| `appointments` | `Cliente`, `Turno` (con validación de fechas pasadas y horario del salón), `Venta` (venta de producto, descuenta stock automáticamente) |
 | `reviews` | `Resena`, ligada al `Turno` y por lo tanto al `Barbero` específico |
 | `payments` | `Pago`, integración Checkout Pro (seña al reservar) + webhook |
 | `whatsapp_bot` | Bot de reglas fijas (Meta Cloud API): webhook, state machine, recordatorios y solicitud de reseñas |
-| `dashboard` | KPIs de facturación y ranking de peluqueros por rating |
+| `dashboard` | Panel del dueño: KPIs de facturación (turnos + productos), turnos/tratamientos, clientes y su historial, inventario y ventas de productos, reseñas con comentario, log de WhatsApp, ranking de peluqueros por rating |
 | `webbooking` | Mini-web pública: elegir servicio → peluquero → horario → confirmar |
 | `api` | API de "tools" autenticada por API key, para bots externos con LLM (ej. Forja) |
 
@@ -359,7 +367,29 @@ exactamente la Fase 3 del roadmap original ("onboarding self-service de
 nuevos salones"); por ahora el flujo es: vos cargás los datos del salón
 al cerrar la venta, y le das el link de login ya armado.
 
+## Deploy en producción
+
+Desplegado en Vercel (Django vía WSGI + WhiteNoise para estáticos) con
+Postgres en Neon. `vercel.json` usa el formato clásico `builds`/`routes`
+(el formato nuevo `functions`/`rewrites` rompe el routing de Django). Las
+migraciones y el alta de salones en producción se hacen vía endpoints
+HTTP protegidos por `CRON_SECRET` (no hay acceso a shell en serverless):
+`/cron/migrar/`, `/cron/setup-inicial/`, `/cron/crear-salon/`.
+
+**Pendiente de acción manual del dueño del proyecto (no se puede resolver
+por API):**
+- Poner `DEBUG=0` en las variables de entorno de Vercel antes de cargar
+  datos reales de clientes (hoy sigue en `True`).
+- Desconectar cualquier otro proyecto de Vercel que haya quedado
+  vinculado al mismo repo de GitHub, para que los deploys no se dupliquen
+  en un proyecto ajeno (Vercel → proyecto → Settings → Git → Disconnect).
+- Rotar `SECRET_KEY`, `CRON_SECRET`, la contraseña del superusuario y la
+  connection string de Postgres si en algún momento se compartieron por
+  fuera de las variables de entorno de Vercel.
+
 ## Próximos pasos (no arrancar sin validar lo anterior con el cliente real)
 
 - Terminar Fase 2: promociones activas en el flujo de reserva/pago (web y WhatsApp) + pago total al finalizar el servicio.
 - Fase 3: multi-tenant self-service, panel super-admin, facturación SaaS.
+- Subida de fotos de producto a un storage externo (S3/R2) — hoy no persiste en el filesystem serverless de Vercel.
+- Tests automatizados (hoy no hay suite de tests).
