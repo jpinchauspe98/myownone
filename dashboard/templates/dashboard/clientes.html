@@ -7,7 +7,7 @@
         <button type="submit">Buscar</button>
     </form>
     <table>
-        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Turnos</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Veces que vino</th></tr></thead>
         <tbody>
         {% for c in clientes %}
             <tr class="link-row" onclick="location.href='{% url 'dashboard:cliente_detalle' tenant.slug c.id %}'">

@@ -68,6 +68,7 @@
     <a href="{% url 'dashboard:clientes' tenant.slug %}" class="{% if request.resolver_match.url_name in 'clientes,cliente_detalle' %}active{% endif %}">Clientes</a>
     <a href="{% url 'dashboard:productos' tenant.slug %}" class="{% if request.resolver_match.url_name == 'productos' %}active{% endif %}">Productos</a>
     <a href="{% url 'dashboard:whatsapp' tenant.slug %}" class="{% if request.resolver_match.url_name == 'whatsapp' %}active{% endif %}">WhatsApp</a>
+    <a href="{% url 'dashboard:resenas' tenant.slug %}" class="{% if request.resolver_match.url_name == 'resenas' %}active{% endif %}">Reseñas</a>
     <a href="{% url 'dashboard:ranking_peluqueros' tenant.slug %}" class="{% if request.resolver_match.url_name == 'ranking_peluqueros' %}active{% endif %}">Peluqueros</a>
 </nav>
 <main>

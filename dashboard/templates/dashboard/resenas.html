@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+    <h2>Reseñas de clientes</h2>
+    <form class="filters" method="get">
+        <div>
+            <label for="barbero">Peluquero</label>
+            <select name="barbero" id="barbero" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                {% for b in barberos %}
+                <option value="{{ b.id }}" {% if barbero_id == b.id|stringformat:"s" %}selected{% endif %}>{{ b.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    {% for r in resenas %}
+        <div class="card" style="margin-bottom:0.75rem;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                <strong>{{ r.cliente.nombre }}</strong>
+                <span class="muted">{{ r.fecha|date:"d/m/Y" }}</span>
+            </div>
+            <p style="margin:0.35rem 0;">
+                {% for i in "12345" %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}
+                <span class="muted">para {{ r.barbero.nombre }}</span>
+            </p>
+            {% if r.comentario %}
+                <p style="margin:0;">{{ r.comentario|linebreaksbr }}</p>
+            {% else %}
+                <p class="muted" style="margin:0;">Sin comentario.</p>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p class="empty">Todavía no hay reseñas.</p>
+    {% endfor %}
+</div>
+{% endblock %}

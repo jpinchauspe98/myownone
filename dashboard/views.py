@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from appointments.models import Cliente, Turno, Venta
 from catalog.models import Producto
+from reviews.models import Resena
 from whatsapp_bot.models import MensajeWhatsApp
 from tenants.models import Tenant
 from .auth import propietario_o_superadmin_required, puede_administrar
@@ -157,10 +158,13 @@ def cliente_detalle(request, tenant, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id, tenant=tenant)
     turnos = cliente.turnos.select_related("barbero", "servicio").all()
     compras = cliente.compras.select_related("producto").all()
-    total_gastado = (turnos.filter(estado=Turno.Estado.COMPLETADO).aggregate(t=Sum("monto"))["t"] or 0) + \
+    resenas = cliente.resenas.select_related("barbero").all()
+    turnos_completados = turnos.filter(estado=Turno.Estado.COMPLETADO)
+    total_gastado = (turnos_completados.aggregate(t=Sum("monto"))["t"] or 0) + \
         (compras.aggregate(t=Sum("total"))["t"] or 0)
     return render(request, "dashboard/cliente_detalle.html", {
         "tenant": tenant, "cliente": cliente, "turnos": turnos, "compras": compras,
+        "resenas": resenas, "cantidad_visitas": turnos_completados.count(),
         "total_gastado": total_gastado,
     })
 
@@ -194,6 +198,20 @@ def registrar_venta(request, tenant):
         messages.error(request, "; ".join(exc.messages))
 
     return redirect("dashboard:productos", tenant.slug)
+
+
+@propietario_o_superadmin_required
+def resenas_list(request, tenant):
+    """Reseñas de clientes, con comentario, para leer el feedback real."""
+    barbero_id = request.GET.get("barbero", "")
+    resenas = tenant.resenas.select_related("barbero", "cliente", "turno").all()
+    if barbero_id:
+        resenas = resenas.filter(barbero_id=barbero_id)
+    resenas = resenas[:200]
+    barberos = tenant.barberos.filter(activo=True).order_by("nombre")
+    return render(request, "dashboard/resenas.html", {
+        "tenant": tenant, "resenas": resenas, "barberos": barberos, "barbero_id": barbero_id,
+    })
 
 
 @propietario_o_superadmin_required

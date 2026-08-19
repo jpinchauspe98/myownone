@@ -3,7 +3,10 @@
 <div class="card">
     <h2>{{ cliente.nombre }}</h2>
     <p class="muted">{{ cliente.telefono }}{% if cliente.email %} · {{ cliente.email }}{% endif %}</p>
-    <p><strong>Total gastado:</strong> ${{ total_gastado }}</p>
+    <div class="kpi-row" style="margin-bottom:0;">
+        <div class="kpi"><div class="value">{{ cantidad_visitas }}</div><div class="label">Veces que vino</div></div>
+        <div class="kpi"><div class="value">${{ total_gastado }}</div><div class="label">Total gastado</div></div>
+    </div>
 </div>
 
 <div class="card">
@@ -47,5 +50,18 @@
         {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div class="card">
+    <h2>Reseñas dejadas</h2>
+    {% for r in resenas %}
+        <p style="margin:0.25rem 0;">
+            {% for i in "12345" %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}
+            <span class="muted">para {{ r.barbero.nombre }} · {{ r.fecha|date:"d/m/Y" }}</span>
+            {% if r.comentario %}<br>{{ r.comentario }}{% endif %}
+        </p>
+    {% empty %}
+        <p class="empty">Todavía no dejó reseñas.</p>
+    {% endfor %}
 </div>
 {% endblock %}
