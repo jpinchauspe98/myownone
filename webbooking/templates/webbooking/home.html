@@ -1,5 +1,30 @@
 {% extends "webbooking/base.html" %}
 {% block content %}
+{% if promociones %}
+<div class="card">
+    <h2>Promociones activas</h2>
+    <div class="grid">
+        {% for p in promociones %}
+        <div class="option">
+            {% if p.tipo == "porcentaje" %}
+                <strong>{{ p.valor|floatformat:0 }}% off</strong>
+            {% elif p.tipo == "2x1" %}
+                <strong>2x1</strong>
+            {% else %}
+                <strong>Combo</strong>
+            {% endif %}
+            <div class="muted">
+                {% if p.servicio %}{{ p.servicio.nombre }}{% endif %}
+                {% if p.servicio and p.producto %} + {% endif %}
+                {% if p.producto %}{{ p.producto.nombre }}{% endif %}
+            </div>
+            <div class="muted">Válido hasta el {{ p.vigencia_hasta|date:"d/m" }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div class="card">
     <h2>Nuestros peluqueros</h2>
     <div class="grid">

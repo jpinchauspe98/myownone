@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from appointments.models import Cliente, Turno
 from appointments.services import slots_disponibles
@@ -15,12 +16,22 @@ def _get_tenant(slug):
     return get_object_or_404(Tenant, slug=slug, activo=True)
 
 
+def _promociones_vigentes(tenant):
+    hoy = timezone.localdate()
+    return (
+        tenant.promociones
+        .filter(activo=True, vigencia_desde__lte=hoy, vigencia_hasta__gte=hoy)
+        .select_related("producto", "servicio")
+    )
+
+
 def salon_home(request, slug):
     tenant = _get_tenant(slug)
     servicios = tenant.servicios.filter(activo=True).select_related("categoria")
     barberos = tenant.barberos.filter(activo=True).prefetch_related("especialidades")
+    promociones = _promociones_vigentes(tenant)
     return render(request, "webbooking/home.html", {
-        "tenant": tenant, "servicios": servicios, "barberos": barberos,
+        "tenant": tenant, "servicios": servicios, "barberos": barberos, "promociones": promociones,
     })
 
 
@@ -44,10 +55,12 @@ def reservar(request, slug):
 
     slots_por_dia = []
     monto_sena = None
+    promocion_servicio = None
     if servicio and barbero:
         slots_por_dia = slots_disponibles(tenant, barbero, servicio)
         if tenant.sena_habilitada and tenant.mp_access_token:
             monto_sena = round(servicio.precio * tenant.sena_porcentaje / 100, 2)
+        promocion_servicio = _promociones_vigentes(tenant).filter(servicio=servicio).first()
 
     if request.method == "POST":
         fecha_hora_raw = request.POST.get("fecha_hora")
@@ -88,6 +101,7 @@ def reservar(request, slug):
         "tenant": tenant, "servicios": servicios, "barberos": barberos,
         "servicio": servicio, "barbero": barbero, "primero_disponible": primero_disponible,
         "slots_por_dia": slots_por_dia, "monto_sena": monto_sena,
+        "promocion_servicio": promocion_servicio,
     })
 
 

@@ -389,7 +389,11 @@ por API):**
 
 ## Próximos pasos (no arrancar sin validar lo anterior con el cliente real)
 
-- Terminar Fase 2: promociones activas en el flujo de reserva/pago (web y WhatsApp) + pago total al finalizar el servicio.
+- Terminar Fase 2: hoy las promociones vigentes ya se muestran en la
+  página del salón y en el flujo de reserva (banner + aviso al elegir el
+  servicio), pero el descuento no se aplica todavía automáticamente al
+  monto del turno/seña — falta esa integración con el cálculo de precio
+  y con el pago total al finalizar el servicio.
 - Fase 3: multi-tenant self-service, panel super-admin, facturación SaaS.
 - Subida de fotos de producto a un storage externo (S3/R2) — hoy no persiste en el filesystem serverless de Vercel.
 - Tests automatizados (hoy no hay suite de tests).

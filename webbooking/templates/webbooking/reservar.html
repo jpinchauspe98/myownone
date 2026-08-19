@@ -47,6 +47,15 @@
         {% if primero_disponible %}<span class="muted">(primero disponible)</span>{% endif %}
         — <a href="?servicio={{ servicio.id }}">cambiar</a>
     </p>
+    {% if promocion_servicio %}
+    <p class="muted">
+        🎉 Promo vigente en este servicio:
+        {% if promocion_servicio.tipo == "porcentaje" %}{{ promocion_servicio.valor|floatformat:0 }}% off
+        {% elif promocion_servicio.tipo == "2x1" %}2x1
+        {% else %}combo con producto{% endif %}
+        (hasta el {{ promocion_servicio.vigencia_hasta|date:"d/m" }}) — consultalo con el salón al confirmar.
+    </p>
+    {% endif %}
 
     <form method="post" id="booking-form">
         {% csrf_token %}
